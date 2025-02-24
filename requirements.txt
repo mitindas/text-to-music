@@ -1,2 +1,6 @@
 transformers
 torch
+streamlit
+numpy
+queue
+threading
