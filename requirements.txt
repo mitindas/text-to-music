@@ -4,3 +4,5 @@ streamlit
 numpy
 queue
 threading
+ffmpeg-python
+pyngrok
