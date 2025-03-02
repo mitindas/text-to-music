@@ -1,4 +1,4 @@
-# <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f3b6/512.gif" alt="🎶" width="32" height="32"> Text to music generation with Facebook [musicgen](https://github.com/facebookresearch/audiocraft/blob/main/docs/MUSICGEN.md) models
+# Text to music generation with Facebook [musicgen](https://github.com/facebookresearch/audiocraft/blob/main/docs/MUSICGEN.md) models <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f3b6/512.gif" alt="🎶" width="32" height="32"> 
 ## Minimum GPU Requirements
  - Small Model - 5 GB VRAM
  - Medium Model - 10 GB VRAM
