@@ -1,8 +1,5 @@
 transformers
 torch
 streamlit
-numpy
-queue
-threading
 ffmpeg-python
 pyngrok
