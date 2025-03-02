@@ -3,11 +3,17 @@ import numpy as np
 from queue import Queue
 from threading import Thread
 import torch
+import random
 from transformers import MusicgenForConditionalGeneration, MusicgenProcessor, set_seed
 
 # Initialize the model and processor
-model = MusicgenForConditionalGeneration.from_pretrained("facebook/musicgen-small", attn_implementation="eager")
-processor = MusicgenProcessor.from_pretrained("facebook/musicgen-small")
+@st.cache_resource
+def load_model():
+    model = MusicgenForConditionalGeneration.from_pretrained("facebook/musicgen-small", attn_implementation="eager")
+    processor = MusicgenProcessor.from_pretrained("facebook/musicgen-small")
+    return model, processor
+
+model, processor = load_model()
 
 title = "Text to Music!"
 st.title(title)
@@ -15,9 +21,13 @@ st.title(title)
 sampling_rate = model.audio_encoder.config.sampling_rate
 frame_rate = model.audio_encoder.config.frame_rate
 
-# Initial setup for progress bar in session state
+# Initial setup for progress bar and generated audio in session state
 if 'progress_bar' not in st.session_state:
     st.session_state['progress_bar'] = None
+if 'generated_audio' not in st.session_state:
+    st.session_state['generated_audio'] = None
+if 'audio_played' not in st.session_state:
+    st.session_state['audio_played'] = False
 
 class MusicgenStreamer:
     def __init__(self, model, play_steps=10, device=None):
@@ -84,7 +94,7 @@ class MusicgenStreamer:
         else:
             return value
 
-def generate_audio(text_prompt, audio_length_in_s=10.0, play_steps_in_s=2.0):
+def generate_audio(text_prompt, audio_length_in_s=10.0, play_steps_in_s=1.5):
     max_new_tokens = int(frame_rate * audio_length_in_s)
     play_steps = int(frame_rate * play_steps_in_s)
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -95,7 +105,11 @@ def generate_audio(text_prompt, audio_length_in_s=10.0, play_steps_in_s=2.0):
     inputs = processor(text=text_prompt, padding=True, return_tensors="pt")
     streamer = MusicgenStreamer(model, device=device, play_steps=play_steps)
     streamer.total_steps = max_new_tokens // play_steps
-    set_seed(5)  # Fixing seed at 5
+    
+    # Use random seed instead of fixed seed
+    random_seed = random.randint(1, 1000)
+    set_seed(random_seed)
+    
     generation_kwargs = dict(**inputs.to(device), streamer=streamer, max_new_tokens=max_new_tokens)
     thread = Thread(target=model.generate, kwargs=generation_kwargs)
     thread.start()
@@ -107,16 +121,28 @@ def generate_audio(text_prompt, audio_length_in_s=10.0, play_steps_in_s=2.0):
             progress_value = min((idx + 1) / streamer.total_steps, 1.0)
             st.session_state.progress_bar.progress(progress_value)
     generated_audio = np.concatenate(all_audio)
-    return generated_audio
+    return generated_audio, random_seed
 
-prompt = st.text_input("Enter your text prompt", "80s pop track with synth and instrumentals")
-audio_length = st.slider("Audio length in seconds", min_value=10, max_value=30, value=15, step=5)
-streaming_interval = st.slider(
-    "Streaming interval in seconds", min_value=0.5, max_value=2.5, value=1.5, step=0.5,
-    help="Lower = shorter chunks, lower latency, more codec steps"
-)
+# Use form to prevent re-running on every interaction
+with st.form(key="music_generation_form"):
+    audio_prompt = st.text_input("Enter your text prompt", "80s pop track with synth and instrumentals")
+    audio_length = st.slider("Audio length in seconds", min_value=10, max_value=30, value=15, step=5)
+    
+    generate_button = st.form_submit_button("Generate Music")
 
-if st.button("Generate"):
-    st.session_state.progress_bar = st.progress(0)
-    generated_audio = generate_audio(prompt, audio_length, streaming_interval)
-    st.audio(generated_audio, format="audio/wav", sample_rate=sampling_rate)
+# Only run generation when form is submitted
+if generate_button:
+    st.session_state['progress_bar'] = st.progress(0)
+    
+    with st.spinner("Generating music..."):
+        generated_audio, seed_used = generate_audio(audio_prompt, audio_length)
+        st.session_state['generated_audio'] = generated_audio
+        st.session_state['audio_played'] = False
+    
+    st.session_state['progress_bar'] = None
+    st.success(f"Music generated successfully! (Seed: {seed_used})")
+
+# Display the audio if it exists in session state
+if st.session_state['generated_audio'] is not None and not st.session_state['audio_played']:
+    st.audio(st.session_state['generated_audio'], format="audio/wav", sample_rate=sampling_rate)
+    st.session_state['audio_played'] = True
