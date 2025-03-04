@@ -9,7 +9,7 @@ from transformers import MusicgenForConditionalGeneration, MusicgenProcessor, se
 import gradio as gr
 import spaces
 
-# Initialize the model and processor
+# Initialize model and processor
 model = MusicgenForConditionalGeneration.from_pretrained("facebook/musicgen-small", attn_implementation="eager")
 processor = MusicgenProcessor.from_pretrained("facebook/musicgen-small")
 
