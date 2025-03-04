@@ -5,15 +5,15 @@
  - Large Model - 15 GB VRAM
 ## Run on your own machine
 1. Clone the repository
-```shell
+```
 git clone https://github.com/mitindas/text-to-music
 ```
 2. Install the requirements
-```shell
+```
 pip -r install requirements.py
 ```
-3. Run the app (Following code runs the Musicgen-Small model)
-```shell
+3. Run the app (following code runs the Musicgen-Small model)
+```
 python app.py
 ```
 ## Sample Audio (Prompt - "Piano")
