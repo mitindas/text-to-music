@@ -14,7 +14,7 @@ pip -r install requirements.py
 ```
 3. Run the app (Following code runs the Musicgen-Small model)
 ```shell
-streamlit run small.py
+python app.py
 ```
 ## Sample Audio (Prompt - "Piano")
 
